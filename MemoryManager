@@ -1,20 +1,24 @@
 package memory_management;
 
+import java.util.Collection;
+import java.util.EmptyStackException;
 import java.util.HashSet;
+import java.util.ListIterator;
 import java.util.Stack;
 
 /**
- * This class represents the current memory of some s-java program.
- */
-public class MemoryManager 
+* This generic class represents the current memory of some s-java program.
+* build by the logic of s-java.
+*/
+public class MemoryManager
 {
 	private HashSet<Method> globalMethods;
 	private HashSet<Variable> globalVariables;
 	private Stack<HashSet<Variable>> localVariablesStack;
-
+	
 	/**
-	 * Constructor
-	 */
+	* Default constructor - initialize the collections
+	*/
 	public MemoryManager()
 	{
 		this.globalMethods = new HashSet<Method>();
@@ -22,47 +26,151 @@ public class MemoryManager
 		this.localVariablesStack = new Stack<HashSet<Variable>>();
 	}
 	
-	public boolean addVariable(Variable variable) 
+	/**
+	 * Adds local variable to the current level
+	 * @param variable The variable to add
+	 * @return true iff the variable is not already in this level.
+	 */
+	public boolean addLocalVariable(Variable variable)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		// if its already on this level - return false
+		if (localVariablesStack.peek().contains(variable)) 
+			return false;
+		else
+			return localVariablesStack.peek().add(variable);
 	}
 	
-	public Variable getVariable(String variableName)
+	/**
+	 * Adds all of the elements in local variables collection to the current level.
+	 * @param variables The variables collection to add to add
+	 * @return booleans array - contain true at the 'i' place
+	 * 			 iff the variable at the 'i' place is not already in this level.
+	 */
+	public boolean[] addLocalVariables(Collection<Variable> variables)
 	{
-		// TODO Auto-generated method stub
+		boolean[] resultsArray = new boolean[variables.size()];
+		int index = 0;
+		for (Variable variable : variables)
+		{
+			resultsArray[index] = addLocalVariable(variable);
+			index++;
+		}
+		return resultsArray;
+	}
+	
+	/**
+	 * run all over the levels of the memory, from the inner one to the external one,
+	 * if found corresponding name, returns it and stop the search.
+	 * @param variableName the variable name to search
+	 * @return the most inner variable - if found. null otherwise.
+	 */
+	public Variable getLocalVariable(String variableName)
+	{
+		ListIterator<HashSet<Variable>> iterator = 
+				localVariablesStack.listIterator(localVariablesStack.size());
+		while(iterator.hasPrevious())
+		{
+			HashSet<Variable> curVariableSet = iterator.previous();
+			for (Variable curVariable: curVariableSet) 
+			{
+				if (curVariable.getName().equals(variableName))
+				{
+					return curVariable;
+				}
+			}
+		}
 		return null;
 	}
+
 	
+	/**
+	 * Searches for the given method name at the memory
+	 * @param methodName The method name to return
+	 * @return The method with this name, if found. null otherwise.
+	 */
 	public Method getMethod(String methodName)
 	{
-		// TODO Auto-generated method stub
+		for (Method method : globalMethods)
+		{
+			if (method.getName().equals(methodName)) 
+			{
+				return method;
+			}
+		}
 		return null;
 	}
-
-
-	//////////////////////////////////////////////////////////////////////////////
-	/// you dont need those: /// you dont need those: /// you dont need those: /// 
-	//////////////////////////////////////////////////////////////////////////////
-	public void addNewLevelToStack()
+	
+	
+	/**
+	 * Adds a new element to the memory stack,
+	 * the memory will search now, from this level to the bottom of the stack
+	 */
+	public void addNewLevel()
 	{
-		// TODO Auto-generated method stub
+		localVariablesStack.add(new HashSet<Variable>());
 	}
 	
-	public void removeCurrentLevelFromStack()
+	/**
+	 * Pops the last element from the memory stack.
+	 * The memory will search now, from this level to the bottom of the stack
+	 * @throws Exception TODO
+	 */
+	public void removeCurrentLevel() throws Exception
 	{
-		// TODO Auto-generated method stub
+		try
+		{
+			localVariablesStack.pop();
+		}
+		catch(EmptyStackException e)
+		{
+			throw new Exception()/*TODO*/;
+		}
 	}
 	
-		public boolean addGlobalMethod(Method method) 
+	/**
+	 * Add a global method to the memory, 
+	 * you can use this method all over the program,
+	 * and you cannot remove it (you don't need to remove it)
+	 * @param method the method to add.
+	 * @return true iff this memory did not already contain the global method.
+	 */
+	public boolean addGlobalMethod(Method method)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		if (getMethod(method.getName()) == null)
+			return globalMethods.add(method);
+		else
+			return false;
 	}
-
-	public boolean addGlobalVariable(Variable variable) 
+	
+	/**
+	 * Add a global variable to the memory, 
+	 * you can use this variable all over the program,
+	 * and you cannot remove it (you don't need to remove it)
+	 * @param variable the variable to add.
+	 * @return true iff this memory did not already contain that global variable.
+	 */
+	public boolean addGlobalVariable(Variable variable)
 	{
-		// TODO Auto-generated method stub
+		if(isGlobalVariableNameExist(variable.getName()))
+			return false;
+		else
+			return globalVariables.add(variable);
+	}
+	
+	/*
+	 * search if there is already such name for global variable
+	 * @param variableName - the variable name to look for
+	 * @return - true iff other global variable has this name
+	 */
+	private boolean isGlobalVariableNameExist(String variableName)
+	{
+		for(Variable curVariable: globalVariables)
+		{
+			if(curVariable.getName().equals(variableName))
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 }
